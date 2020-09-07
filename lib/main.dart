@@ -13,8 +13,8 @@ class MyApp extends StatelessWidget {
     // 往哪一个链接发送HttpLink
     final HttpLink httpLink = HttpLink(uri: 'https://api.github.com/graphql');
     final AuthLink authLink = AuthLink(
-      getToken: () async {
-        final token = ' e63362408bc11a8c31a9954fad1b174bfc1c806a';
+      getToken: () {
+        final token = ' 3d0ea2dec588dca86e4fdc0d21e759187ada0020';
         return 'Bearer $token';
       },
     );
@@ -28,11 +28,11 @@ class MyApp extends StatelessWidget {
         ),
       ),
     );
-
+    // MaterialApp入口，可定义多个参数
     return MaterialApp(
       title: 'GraphQL Test',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.purple,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: GraphQLProvider(
@@ -87,43 +87,64 @@ class ResultView extends StatelessWidget {
           }
 
           if (result.data == null) {
-            return Center(child: Text('Countries not found.'));
+            return Center(child: Text('ERROR'));
           }
-          // 返回_countriesView列表
-          Future<PostsData> edgesList =
-              result.data['repository']['issues']['edges'];
-          print(edgesList);
-          // List allTitleList = [];
-          // List allIdList = [];
+          // 拿到接口数据
+          final List<LazyCacheMap> edgesList =
+              (result.data['repository']['issues']['edges'] as List<dynamic>)
+                  .cast<LazyCacheMap>();
 
-          // var h = {};
-          // var maxNum = 0;
-          // var maxName;
-          // for (var item in edgesList) {
-          //   var authorName = item['node']['author']['login'];
-          //   allTitleList.add(item['node']['title']);
-          //   allIdList.add(item['node']['id']);
-          //   if (h[authorName]) {
-          //     h[authorName] = h[authorName]++;
-          //   } else {
-          //     h[authorName] = 1;
-          //   }
-          //   if (h[authorName] > maxNum) {
-          //     maxName = authorName;
-          //     maxNum = h[authorName];
-          //   }
-          // }
-          // 最近100个issues中所有的标题(title) (不重复)
-          // final setTitleList = allTitleList.toSet();
-          // // 最近100个issues中所有的作者ID (不重复)
-          // final setIdList = allIdList.toSet();
-          // // print(setTitleList.length);
-          // // print(setIdList.length);
+          List allTitleList = [];
+          List allIdList = [];
 
-          // print({maxName, maxNum}); //返回最多元素对象
+          var h = {};
+          var maxNum = 0;
+          var maxAuthor;
+          var tips = '';
 
-          return Center(
-            child: Text('data'),
+          for (Map<String, dynamic> item in edgesList) {
+            // 最近100个issues中所有的标题(title)
+            allTitleList.add(item['node']['title']);
+            // 最近100个issues中所有的作者ID
+            allIdList.add(item['node']['id']);
+            // 作者名称
+            var authorName = item['node']['author'] != null
+                ? item['node']['author']['login']
+                : '';
+            var isHas = h[authorName] != null ? true : false;
+            if (isHas) {
+              h[authorName] = h[authorName]++;
+            } else {
+              h[authorName] = 1;
+            }
+            if (h[authorName] > maxNum) {
+              maxAuthor = authorName;
+              maxNum = h[authorName];
+            }
+          }
+          // 答案1
+          final setTitleList = allTitleList.toSet();
+          // 答案2
+          final setIdList = allIdList.toSet();
+          // 答案3
+          tips = maxNum == 1
+              ? '各位作者打成平手~'
+              : "最近100个issues中 $maxAuthor 提交了最多的issues";
+
+          print(setTitleList.length);
+          print(setIdList.length);
+
+          return Container(
+            height: 60,
+            margin: EdgeInsets.only(left: 5, right: 5, top: 5), // 边距
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.all(Radius.circular(5)), //设置圆角
+            ),
+            child: Row(
+              children: <Widget>[
+                Text(tips),
+              ],
+            ),
           );
         },
       ),
